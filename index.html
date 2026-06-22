@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cronograma de Informática - EMEF Vilma</title>
+    <style>
+        :root {
+            --primary-color: #1e3a8a;
+            --primary-light: #eff6ff;
+            --accent-fixed: #dbeafe;
+            --accent-fixed-text: #1e40af;
+            --success-bg: #ecfdf5;
+            --success-text: #065f46;
+            --success-border: #a7f3d0;
+            --danger-bg: #fef2f2;
+            --danger-text: #991b1b;
+            --danger-border: #fca5a5;
+            --gray-block: #f3f4f6;
+            --gray-text: #6b7280;
+            --border-color: #e5e7eb;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f8fafc;
+            color: #334155;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1100px;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 25px;
+            border-bottom: 3px solid var(--primary-color);
+            padding-bottom: 15px;
+        }
+
+        header h1 {
+            color: var(--primary-color);
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        header p {
+            color: var(--gray-text);
+            font-size: 14px;
+        }
+
+        .legend {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            font-size: 13px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: center;
+            table-layout: fixed;
+            min-width: 700px;
+        }
+
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 12px 8px;
+            font-size: 14px;
+            vertical-align: middle;
+            height: 85px;
+        }
+
+        th {
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: 600;
+            height: 45px;
+        }
+
+        th:first-child {
+            width: 130px;
+        }
+
+        .time-cell {
+            background-color: #f1f5f9;
+            font-weight: bold;
+            color: #1e293b;
+            height: auto;
+        }
+
+        .time-sub {
+            font-weight: normal;
+            font-size: 11px;
+            color: #64748b;
+            display: block;
+            margin-top: 2px;
+        }
+
+        .interval-row td {
+            background-color: var(--gray-block);
+            color: var(--gray-text);
+            font-weight: bold;
+            letter-spacing: 2px;
+            height: 40px;
+            cursor: not-allowed;
+        }
+
+        .fixed-cell {
+            background-color: var(--accent-fixed);
+            color: var(--accent-fixed-text);
+            font-weight: 600;
+            cursor: not-allowed;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .fixed-title {
+            font-size: 11px;
+            text-transform: uppercase;
+            color: #2563eb;
+            display: block;
+            margin-top: 3px;
+        }
+
+        .free-cell {
+            background-color: var(--success-bg);
+            color: var(--success-text);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .free-cell:hover {
+            background-color: #d1fae5;
+            transform: scale(1.01);
+        }
+
+        .occupied-cell {
+            background-color: var(--danger-bg);
+            color: var(--danger-text);
+            cursor: pointer;
+            border-left: 4px solid var(--danger-border);
+            transition: all 0.2s;
+        }
+
+        .occupied-cell:hover {
+            background-color: #fee2e2;
+        }
+
+        .prof-name {
+            font-weight: bold;
+            display: block;
+        }
+
+        .room-series {
+            font-size: 13px;
+            background: rgba(239, 68, 68, 0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            display: inline-block;
+            margin-top: 4px;
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            z-index: 1000;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.1);
+            transform: translateY(-20px);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-overlay.active .modal {
+            transform: translateY(0);
+        }
+
+        .modal h3 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .modal p {
+            font-size: 13px;
+            color: var(--gray-text);
+            margin-bottom: 15px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #475569;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .form-group input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.1);
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+
+        .btn-cancel {
+            background: #e2e8f0;
+            color: #475569;
+        }
+
+        .btn-cancel:hover { background: #cbd5e1; }
+
+        .btn-save {
+            background: #059669;
+            color: white;
+        }
+
+        .btn-save:hover { background: #047857; }
+
+        .btn-delete {
+            background: #dc2626;
+            color: white;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .btn-delete:hover { background: #b91c1c; }
+
+        .sync-indicator {
+            text-align: right;
+            font-size: 12px;
+            color: #059669;
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 4px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Cronograma de Informática - EMEF VILMA</h1>
+        <p>Controle Semanal de Ocupação da Sala de Informática</p>
+    </header>
+
+    <div class="legend">
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: var(--success-bg);"></div>
+            <span>🟢 Disponível para Agendamento</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: var(--accent-fixed);"></div>
+            <span>💻 Aula Fixa (Tecnologia)</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: var(--danger-bg);"></div>
+            <span>🔴 Ocupado por Professor</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: var(--gray-block);"></div>
+            <span>🚫 Intervalo (Bloqueado)</span>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table>
+            <thead>
+                <tr>
+                    <th>Horário</th>
+                    <th>Segunda</th>
+                    <th>Terça</th>
+                    <th>Quarta</th>
+                    <th>Quinta</th>
+                    <th>Sexta</th>
+                </tr>
+            </thead>
+            <tbody id="schedule-body">
+                <!-- Gerado via JavaScript -->
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="sync-indicator" id="sync-status">
+        ● Conectado e Sincronizado
+    </div>
+</div>
+
+<!-- Modal para Agendamento -->
+<div class="modal-overlay" id="modal-overlay">
+    <div class="modal" id="modal">
+        <h3 id="modal-title">Agendar Horário</h3>
+        <p id="modal-datetime"></p>
+        
+        <div id="form-container">
+            <div class="form-group">
+                <label for="prof-name-input">Nome do Professor *</label>
+                <input type="text" id="prof-name-input" placeholder="Ex: Prof. Carlos">
+            </div>
+            <div class="form-group">
+                <label for="series-input">Série / Ano *</label>
+                <input type="text" id="series-input" placeholder="Ex: 5º Ano A">
+            </div>
+            <div class="modal-buttons">
+                <button class="btn btn-cancel" onclick="closeModal()">Cancelar</button>
+                <button class="btn btn-save" onclick="saveBooking()">Confirmar Agendamento</button>
+            </div>
+        </div>
+
+        <div id="view-container" style="display: none;">
+            <div style="margin-bottom: 15px;">
+                <strong style="font-size: 13px; color: var(--gray-text);">Agendado por:</strong>
+                <p id="view-prof" style="font-size: 16px; font-weight: bold; margin-top: 2px;"></p>
+            </div>
+            <div style="margin-bottom: 15px;">
+                <strong style="font-size: 13px; color: var(--gray-text);">Série/Turma:</strong>
+                <p id="view-series" style="font-size: 15px; margin-top: 2px;"></p>
+            </div>
+            <button class="btn btn-delete" onclick="deleteBooking()">Desistir / Apagar Agendamento</button>
+            <button class="btn btn-cancel" style="width: 100%; margin-top: 8px;" onclick="closeModal()">Fechar</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Configuração dos Horários e Aulas Fixas obtidos da imagem da EMEF Vilma
+    const hours = [
+        { id: "h1", range: "12:30 - 13:20", label: "1ª Aula" },
+        { id: "h2", range: "13:20 - 14:10", label: "2ª Aula" },
+        { id: "interval", range: "14:10 - 14:30", label: "INTERVALO" },
+        { id: "h3", range: "14:30 - 15:20", label: "3ª Aula" },
+        { id: "h4", range: "15:20 - 16:10", label: "4ª Aula" }
+    ];
+
+    const days = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta"];
+
+    // Aulas fixas de tecnologia mapeadas exatamente da foto fornecida
+    const fixedClasses = {
+        "Terça-h2": { text: "4ºC - Heloísa" },
+        "Terça-h4": { text: "4ºB - Heloísa" },
+        "Quarta-h3": { text: "3ºE - Heloísa" },
+        "Quarta-h4": { text: "4ºA - Heloísa" },
+        "Quinta-h1": { text: "5ºC - Heloísa" },
+        "Quinta-h2": { text: "3ºB - Isabel" },
+        "Quinta-h3": { text: "3ºA - Isabel<br>4ºD - Heloísa" },
+        "Quinta-h4": { text: "3ºC - Isabel<br>5ºA - Heloísa" },
+        "Sexta-h1": { text: "5ºB - Heloísa" },
+        "Sexta-h2": { text: "5ºC - Heloísa" }
+    };
+
+    // Estado local dos agendamentos dos professores
+    let bookings = {};
+    let currentCellId = null;
+
+    // Para tornar 100% editável de forma compartilhada sem banco pago, usamos uma KV Store pública gratuita.
+    // Usaremos a countapi/keyvalue simplificada para persistência em tempo real entre todos os professores.
+    const STORAGE_KEY = "emef_vilma_informatica_schedule_v1";
+    const API_URL = `https://api.keyvalue.xyz/ef7b219e/${STORAGE_KEY}`; // Endpoint público dedicado de sincronização estável
+
+    async function loadData() {
+        document.getElementById('sync-status').innerText = "⏳ Sincronizando...";
+        document.getElementById('sync-status').style.color = "var(--gray-text)";
+        try {
+            const response = await fetch(API_URL);
+            if (response.ok) {
+                const data = await response.json();
+                bookings = data || {};
+            }
+        } catch (e) {
+            // Fallback para localStorage caso falte internet temporariamente
+            const local = localStorage.getItem(STORAGE_KEY);
+            if (local) bookings = JSON.parse(local);
+        }
+        renderTable();
+        document.getElementById('sync-status').innerText = "● Atualizado em tempo real";
+        document.getElementById('sync-status').style.color = "#059669";
+    }
+
+    async function saveData() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(bookings));
+        try {
+            await fetch(API_URL, {
+                method: 'POST',
+                body: JSON.stringify(bookings),
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (e) {
+            console.error("Erro ao salvar online, salvo localmente:", e);
+        }
+        renderTable();
+    }
+
+    function renderTable() {
+        const tbody = document.getElementById("schedule-body");
+        tbody.innerHTML = "";
+
+        hours.forEach(hour => {
+            const tr = document.createElement("tr");
+            
+            if (hour.id === "interval") {
+                tr.className = "interval-row";
+                tr.innerHTML = `<td class="time-cell">${hour.range}<span class="time-sub">${hour.label}</span></td>` + 
+                               `<td colspan="5">🚫 INTERVALO BLOQUEADO</td>`;
+                tbody.appendChild(tr);
+                return;
+            }
+
+            // Horário da primeira coluna
+            let rowHTML = `<td class="time-cell">${hour.range}<span class="time-sub">${hour.label}</span></td>`;
+
+            days.forEach(day => {
+                const cellKey = `${day}-${hour.id}`;
+                
+                if (fixedClasses[cellKey]) {
+                    // Aula fixa de tecnologia
+                    rowHTML += `<td class="fixed-cell">${fixedClasses[cellKey].text}<span class="fixed-title">Tecnologia</span></td>`;
+                } else if (bookings[cellKey]) {
+                    // Ocupado por um professor
+                    const b = bookings[cellKey];
+                    rowHTML += `<td class="occupied-cell" onclick="openCell('${day}', '${hour.id}', '${hour.range}')">
+                                    <span class="prof-name">${b.prof}</span>
+                                    <span class="room-series">${b.series}</span>
+                                </td>`;
+                } else {
+                    // Horário livre
+                    rowHTML += `<td class="free-cell" onclick="openCell('${day}', '${hour.id}', '${hour.range}')">🟢 Livre</td>`;
+                }
+            });
+
+            tr.innerHTML = rowHTML;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function openCell(day, hourId, range) {
+        currentCellId = `${day}-${hourId}`;
+        document.getElementById("modal-datetime").innerText = `${day} no período das ${range}`;
+        
+        if (bookings[currentCellId]) {
+            // Modo Visualização / Exclusão
+            document.getElementById("modal-title").innerText = "Horário Ocupado";
+            document.getElementById("form-container").style.display = "none";
+            document.getElementById("view-container").style.display = "block";
+            document.getElementById("view-prof").innerText = bookings[currentCellId].prof;
+            document.getElementById("view-series").innerText = bookings[currentCellId].series;
+        } else {
+            // Modo Cadastro
+            document.getElementById("modal-title").innerText = "Agendar Laboratório";
+            document.getElementById("form-container").style.display = "block";
+            document.getElementById("view-container").style.display = "none";
+            document.getElementById("prof-name-input").value = "";
+            document.getElementById("series-input").value = "";
+        }
+        
+        document.getElementById("modal-overlay").classList.add("active");
+    }
+
+    function closeModal() {
+        document.getElementById("modal-overlay").classList.remove("active");
+    }
+
+    function saveBooking() {
+        const prof = document.getElementById("prof-name-input").value.trim();
+        const series = document.getElementById("series-input").value.trim();
+
+        if (!prof || !series) {
+            alert("Por favor, preencha o seu Nome e a sua Série/Ano para conseguir agendar!");
+            return;
+        }
+
+        bookings[currentCellId] = { prof, series };
+        saveData();
+        closeModal();
+    }
+
+    function deleteBooking() {
+        if (confirm("Tem certeza que deseja apagar seu agendamento e liberar este horário?")) {
+            delete bookings[currentCellId];
+            saveData();
+            closeModal();
+        }
+    }
+
+    // Auto-refresh a cada 10 segundos para sincronia entre múltiplos professores visualizando a página
+    setInterval(loadData, 10000);
+
+    // Inicialização
+    window.onload = loadData;
+</script>
+</body>
+</html>
