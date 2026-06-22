@@ -1,3 +1,24 @@
+// 1. Importando as funções necessárias do Firebase via CDN (Web)
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+// 2. Suas configurações oficiais do Firebase
+const firebaseConfig = {
+  apiKey: "AIzaSyAddhKyVCMmTwQ7Y_BKt4t7DyGKilJTsf4",
+  authDomain: "emef-informatica.firebaseapp.com",
+  databaseURL: "https://emef-informatica-default-rtdb.firebaseio.com",
+  projectId: "emef-informatica",
+  storageBucket: "emef-informatica.firebasestorage.app",
+  messagingSenderId: "866544145716",
+  appId: "1:866544145716:web:ca8107de8a13a8096b4161",
+  measurementId: "G-S3KYWR42PD"
+};
+
+// Inicializando o Firebase e o Realtime Database
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// Configuração Estática dos Horários da EMEF Vilma
 const hours = [
     { id: "h1", range: "12:30 - 13:20", label: "1ª Aula" },
     { id: "h2", range: "13:20 - 14:10", label: "2ª Aula" },
@@ -8,6 +29,7 @@ const hours = [
 
 const days = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta"];
 
+// Aulas Fixas de Tecnologia (Extraídas da imagem da EMEF Vilma)
 const fixedClasses = {
     "Terça-h2": "4ºC - Heloísa",
     "Terça-h4": "4ºB - Heloísa",
@@ -25,9 +47,6 @@ let currentWeekOffset = 0;
 let bookings = {};
 let currentSlotKey = null;
 let currentWeekKey = "";
-
-const STORAGE_KEY = "emef_vilma_sage_v3";
-const API_URL = `https://api.keyvalue.xyz/ef7b219e/${STORAGE_KEY}`;
 
 function getWeekDates(offset) {
     const today = new Date();
@@ -56,35 +75,66 @@ function getWeekId(dates) {
     return `${start}_${end}`;
 }
 
-async function loadData() {
-    try {
-        const response = await fetch(API_URL);
-        if (response.ok) {
-            bookings = await response.json() || {};
-        }
-    } catch (e) {
-        const local = localStorage.getItem(STORAGE_KEY);
-        if (local) bookings = JSON.parse(local);
-    }
+// OUVINTE EM TEMPO REAL DO FIREBASE
+// Sincroniza as alterações instantaneamente na tela de todo mundo sem precisar recarregar
+const bookingsRef = ref(db, 'bookings');
+onValue(bookingsRef, (snapshot) => {
+    bookings = snapshot.val() || {};
     renderView();
-}
+});
 
-async function saveData() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(bookings));
-    try {
-        await fetch(API_URL, {
-            method: 'POST',
-            body: JSON.stringify(bookings),
-            headers: { 'Content-Type': 'application/json' }
-        });
-    } catch (e) {}
-    renderView();
-}
-
-function changeWeek(direction) {
+// Tornando as funções acessíveis globalmente na janela pelos botões do HTML
+window.changeWeek = function(direction) {
     currentWeekOffset += direction;
     renderView();
-}
+};
+
+window.closeModal = function() {
+    document.getElementById("modal-overlay").classList.remove("active");
+};
+
+window.saveBooking = function() {
+    const prof = document.getElementById("prof-name-input").value.trim();
+    const series = document.getElementById("series-input").value.trim();
+
+    if (!prof || !series) {
+        alert("Atenção: É necessário preencher o Nome e a Série!");
+        return;
+    }
+
+    set(ref(db, `bookings/${currentWeekKey}/${currentSlotKey}`), { prof, series })
+    .then(() => window.closeModal())
+    .catch((error) => alert("Erro ao salvar: " + error.message));
+};
+
+window.deleteBooking = function() {
+    if (confirm("Deseja mesmo cancelar esta reserva e liberar a sala?")) {
+        set(ref(db, `bookings/${currentWeekKey}/${currentSlotKey}`), null)
+        .then(() => window.closeModal());
+    }
+};
+
+window.openSlot = function(day, hourId, range, fullDayLabel) {
+    currentSlotKey = `${day}-${hourId}`;
+    document.getElementById("modal-datetime").innerText = `${fullDayLabel} — ${range}`;
+    
+    const weekBookings = bookings[currentWeekKey] || {};
+
+    if (weekBookings[currentSlotKey]) {
+        document.getElementById("modal-title").innerText = "Horário Reservado";
+        document.getElementById("form-container").style.display = "none";
+        document.getElementById("view-container").style.display = "block";
+        document.getElementById("view-prof").innerText = weekBookings[currentSlotKey].prof;
+        document.getElementById("view-series").innerText = weekBookings[currentSlotKey].series;
+    } else {
+        document.getElementById("modal-title").innerText = "Agendar Laboratório";
+        document.getElementById("form-container").style.display = "block";
+        document.getElementById("view-container").style.display = "none";
+        document.getElementById("prof-name-input").value = "";
+        document.getElementById("series-input").value = "";
+    }
+    document.getElementById("modal-overlay").classList.add("active");
+};
 
 function renderView() {
     const dates = getWeekDates(currentWeekOffset);
@@ -189,59 +239,3 @@ function renderView() {
         mobileBody.appendChild(card);
     });
 }
-
-function openSlot(day, hourId, range, fullDayLabel) {
-    currentSlotKey = `${day}-${hourId}`;
-    document.getElementById("modal-datetime").innerText = `${fullDayLabel} — ${range}`;
-    
-    if (!bookings[currentWeekKey]) bookings[currentWeekKey] = {};
-    const weekBookings = bookings[currentWeekKey];
-
-    if (weekBookings[currentSlotKey]) {
-        document.getElementById("modal-title").innerText = "Horário Reservado";
-        document.getElementById("form-container").style.display = "none";
-        document.getElementById("view-container").style.display = "block";
-        document.getElementById("view-prof").innerText = weekBookings[currentSlotKey].prof;
-        document.getElementById("view-series").innerText = weekBookings[currentSlotKey].series;
-    } else {
-        document.getElementById("modal-title").innerText = "Agendar Laboratório";
-        document.getElementById("form-container").style.display = "block";
-        document.getElementById("view-container").style.display = "none";
-        document.getElementById("prof-name-input").value = "";
-        document.getElementById("series-input").value = "";
-    }
-    document.getElementById("modal-overlay").classList.add("active");
-}
-
-function closeModal() {
-    document.getElementById("modal-overlay").classList.remove("active");
-}
-
-function saveBooking() {
-    const prof = document.getElementById("prof-name-input").value.trim();
-    const series = document.getElementById("series-input").value.trim();
-
-    if (!prof || !series) {
-        alert("Atenção: É necessário preencher o Nome e a Série!");
-        return;
-    }
-
-    if (!bookings[currentWeekKey]) bookings[currentWeekKey] = {};
-    bookings[currentWeekKey][currentSlotKey] = { prof, series };
-    saveData();
-    closeModal();
-}
-
-function deleteBooking() {
-    if (confirm("Deseja mesmo cancelar esta reserva e liberar a sala?")) {
-        if (bookings[currentWeekKey]) {
-            delete bookings[currentWeekKey][currentSlotKey];
-            saveData();
-        }
-        closeModal();
-    }
-}
-
-// Inicia sincronização e escuta ativa
-setInterval(loadData, 8000);
-window.onload = loadData;
