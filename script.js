@@ -76,14 +76,13 @@ function getWeekId(dates) {
 }
 
 // OUVINTE EM TEMPO REAL DO FIREBASE
-// Sincroniza as alterações instantaneamente na tela de todo mundo sem precisar recarregar
 const bookingsRef = ref(db, 'bookings');
 onValue(bookingsRef, (snapshot) => {
     bookings = snapshot.val() || {};
     renderView();
 });
 
-// Tornando as funções acessíveis globalmente na janela pelos botões do HTML
+// Tornando as funções acessíveis globalmente
 window.changeWeek = function(direction) {
     currentWeekOffset += direction;
     renderView();
@@ -192,7 +191,7 @@ function renderView() {
         desktopBody.appendChild(tr);
     });
 
-    // Mobile Build
+    // Mobile Build (Atualizado com funções de clique diretas nos cards injetados)
     days.forEach((day, dayIdx) => {
         const card = document.createElement("div");
         card.className = "mobile-day-card";
@@ -203,6 +202,7 @@ function renderView() {
         hours.forEach(hour => {
             const fixedKey = `${day}-${hour.id}`;
             const bookingKey = `${day}-${hour.id}`;
+            const fullDayLabel = `${day} (${formatShortDate(dates[dayIdx])})`;
             
             cardHTML += `<div class="mobile-slot-row">
                             <div class="mobile-time-info">
@@ -211,7 +211,7 @@ function renderView() {
                             </div>`;
 
             if (hour.id === "interval") {
-                cardHTML += `<div class="mobile-slot-status" style="background:var(--bg-interval); color:var(--text-interval); font-weight:700; font-size:11px; text-align:center; letter-spacing:1px; border:none;">INTERVALO</div>`;
+                cardHTML += `<div class="mobile-slot-status" style="background:var(--bg-interval); color:var(--text-interval); font-weight:700; font-size:11px; text-align:center; letter-spacing:1px; border:none; cursor:not-allowed;">INTERVALO</div>`;
             } else if (fixedClasses[fixedKey]) {
                 cardHTML += `<div class="mobile-slot-status cell-fixed">
                                 <span class="status-badge">Fixo</span>
@@ -219,13 +219,15 @@ function renderView() {
                              </div>`;
             } else if (weekBookings[bookingKey]) {
                 const b = weekBookings[bookingKey];
-                cardHTML += `<div class="mobile-slot-status cell-occupied" onclick="openSlot('${day}', '${hour.id}', '${hour.range}', '${day} (${formatShortDate(dates[dayIdx])})')">
+                // Injeção direta do clique corrigido para Mobile
+                cardHTML += `<div class="mobile-slot-status cell-occupied" onclick="openSlot('${day}', '${hour.id}', '${hour.range}', '${fullDayLabel}')">
                                 <span class="status-badge">Reservado</span>
                                 <div class="cell-prof">${b.prof}</div>
                                 <div class="cell-series">${b.series}</div>
                              </div>`;
             } else {
-                cardHTML += `<div class="mobile-slot-status cell-free" style="cursor:pointer;" onclick="openSlot('${day}', '${hour.id}', '${hour.range}', '${day} (${formatShortDate(dates[dayIdx])})')">
+                // Injeção direta do clique corrigido para Mobile
+                cardHTML += `<div class="mobile-slot-status cell-free" onclick="openSlot('${day}', '${hour.id}', '${hour.range}', '${fullDayLabel}')">
                                 <span class="status-badge">Livre</span>
                                 <div style="font-size:11px; opacity:0.8;">Disponível para agendamento</div>
                              </div>`;
