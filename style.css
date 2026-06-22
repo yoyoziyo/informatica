@@ -303,26 +303,44 @@ th:first-child {
     margin-top: 3px;
 }
 
-/* Interface Mobile (Estilo Agenda) */
+/* ==========================================================================
+   NOVO: Estilização do Carrossel Mobile Mobile Friendly
+   ========================================================================== */
 .mobile-view {
     display: none;
     width: 100%;
 }
 
+.mobile-carousel-container {
+    display: flex;
+    gap: 16px;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    scroll-snap-type: x mandatory; /* Faz o card grudar na tela */
+    padding: 8px 4px 20px 4px;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Esconde barra de rolagem feia em navegadores */
+.mobile-carousel-container::-webkit-scrollbar {
+    display: none;
+}
+
 .mobile-day-card {
+    flex: 0 0 100%; /* Cada card ocupa exatamente a largura visível */
+    scroll-snap-align: center; /* Centraliza o card ao arrastar */
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
-    margin-bottom: 20px;
     overflow: hidden;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.01);
+    box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.05);
 }
 
 .mobile-day-header {
     background: #f8fafc;
-    padding: 14px 20px;
+    padding: 16px 20px;
     font-weight: 700;
-    font-size: 15px;
+    font-size: 16px;
     color: var(--text-main);
     border-bottom: 1px solid var(--border);
     display: flex;
@@ -334,7 +352,7 @@ th:first-child {
     font-size: 12px;
     color: var(--text-muted);
     background: white;
-    padding: 2px 8px;
+    padding: 3px 10px;
     border-radius: 20px;
     border: 1px solid var(--border);
 }
@@ -354,7 +372,7 @@ th:first-child {
 .mobile-slot-row:last-child { border-bottom: none; }
 
 .mobile-time-info {
-    flex: 0 0 100px;
+    flex: 0 0 95px;
 }
 .mobile-time-range { font-weight: 700; font-size: 13px; color: var(--text-main); }
 .mobile-time-num { font-size: 11px; color: var(--text-muted); font-weight: 500; }
@@ -367,12 +385,27 @@ th:first-child {
     max-width: 240px;
     text-align: left;
     border: 1px solid transparent;
+    cursor: pointer; /* Garante feedback visual de clique no celular */
+    -webkit-tap-highlight-color: transparent; /* Tira o quadrado azul feio do Android */
+}
+
+/* Indicador de arrastar para o lado (Dica Visual) */
+.carousel-hint {
+    display: none;
+    text-align: center;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 /* Responsividade */
 @media (max-width: 768px) {
     .desktop-view { display: none; }
     .mobile-view { display: block; }
+    .carousel-hint { display: block; }
     header { flex-direction: column; align-items: stretch; text-align: center; }
     .week-controls { justify-content: space-between; }
     .current-week-label { min-width: auto; flex: 1; }
