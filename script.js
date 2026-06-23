@@ -29,7 +29,7 @@ const hours = [
 
 const days = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta"];
 
-// Aulas Fixas de Tecnologia (Extraídas da imagem da EMEF Vilma)
+// Aulas Fixas de Tecnologia (Apenas para Informática)
 const fixedClasses = {
     "Terça-h2": "4ºC - Heloísa",
     "Terça-h4": "4ºB - Heloísa",
@@ -47,6 +47,10 @@ let currentWeekOffset = 0;
 let bookings = {};
 let currentSlotKey = null;
 let currentWeekKey = "";
+let isFirstLoad = true; 
+
+// Rota específica do banco da informática
+const PATH_BANCO = 'bookings'; 
 
 function getWeekDates(offset) {
     const today = new Date();
@@ -75,14 +79,39 @@ function getWeekId(dates) {
     return `${start}_${end}`;
 }
 
-// OUVINTE EM TEMPO REAL DO FIREBASE
-const bookingsRef = ref(db, 'bookings');
+// OUVINTE EM TEMPO REAL
+const bookingsRef = ref(db, PATH_BANCO);
 onValue(bookingsRef, (snapshot) => {
     bookings = snapshot.val() || {};
     renderView();
+    
+    // Rola automaticamente para o dia atual se for a primeira abertura da página
+    if (isFirstLoad) {
+        scrollToCurrentDay();
+        isFirstLoad = false;
+    }
 });
 
-// Tornando as funções acessíveis globalmente
+function scrollToCurrentDay() {
+    const today = new Date();
+    const dayOfWeek = today.getDay(); // 1 = Seg, 2 = Ter, 3 = Qua, 4 = Qui, 5 = Sex
+    
+    if (currentWeekOffset === 0 && dayOfWeek >= 1 && dayOfWeek <= 5) {
+        setTimeout(() => {
+            const container = document.getElementById("mobile-body");
+            if (container) {
+                const cards = container.getElementsByClassName("mobile-day-card");
+                const targetIndex = dayOfWeek - 1;
+                
+                if (cards && cards[targetIndex]) {
+                    const cardWidth = cards[targetIndex].offsetWidth;
+                    container.scrollLeft = (cardWidth + 16) * targetIndex; 
+                }
+            }
+        }, 300);
+    }
+}
+
 window.changeWeek = function(direction) {
     currentWeekOffset += direction;
     renderView();
@@ -101,14 +130,14 @@ window.saveBooking = function() {
         return;
     }
 
-    set(ref(db, `bookings/${currentWeekKey}/${currentSlotKey}`), { prof, series })
+    set(ref(db, `${PATH_BANCO}/${currentWeekKey}/${currentSlotKey}`), { prof, series })
     .then(() => window.closeModal())
     .catch((error) => alert("Erro ao salvar: " + error.message));
 };
 
 window.deleteBooking = function() {
     if (confirm("Deseja mesmo cancelar esta reserva e liberar a sala?")) {
-        set(ref(db, `bookings/${currentWeekKey}/${currentSlotKey}`), null)
+        set(ref(db, `${PATH_BANCO}/${currentWeekKey}/${currentSlotKey}`), null)
         .then(() => window.closeModal());
     }
 };
@@ -191,7 +220,7 @@ function renderView() {
         desktopBody.appendChild(tr);
     });
 
-    // Mobile Build (Atualizado com funções de clique diretas nos cards injetados)
+    // Mobile Build
     days.forEach((day, dayIdx) => {
         const card = document.createElement("div");
         card.className = "mobile-day-card";
@@ -219,14 +248,12 @@ function renderView() {
                              </div>`;
             } else if (weekBookings[bookingKey]) {
                 const b = weekBookings[bookingKey];
-                // Injeção direta do clique corrigido para Mobile
                 cardHTML += `<div class="mobile-slot-status cell-occupied" onclick="openSlot('${day}', '${hour.id}', '${hour.range}', '${fullDayLabel}')">
                                 <span class="status-badge">Reservado</span>
                                 <div class="cell-prof">${b.prof}</div>
                                 <div class="cell-series">${b.series}</div>
                              </div>`;
             } else {
-                // Injeção direta do clique corrigido para Mobile
                 cardHTML += `<div class="mobile-slot-status cell-free" onclick="openSlot('${day}', '${hour.id}', '${hour.range}', '${fullDayLabel}')">
                                 <span class="status-badge">Livre</span>
                                 <div style="font-size:11px; opacity:0.8;">Disponível para agendamento</div>
@@ -241,3 +268,14 @@ function renderView() {
         mobileBody.appendChild(card);
     });
 }
+
+// Inicia sistema
+window.onload = function() {
+    // Sincroniza loop secundário a cada 10 segundos apenas em caso de queda de websocket
+    setInterval(() => {
+        onValue(ref(db, PATH_BANCO), (snapshot) => {
+            bookings = snapshot.val() || {};
+            renderView();
+        }, { onlyOnce: true });
+    }, 10000);
+};
