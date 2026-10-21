@@ -31,16 +31,16 @@ const days = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta"];
 
 // Aulas Fixas de Tecnologia (Apenas para Informática)
 const fixedClasses = {
-    "Terça-h2": "4ºC - Heloísa",
-    "Terça-h4": "4ºB - Heloísa",
-    "Quarta-h3": "3ºE - Heloísa",
-    "Quarta-h4": "4ºA - Heloísa",
+    "Terça-h2": "4ºC - Gilmara",
+    "Terça-h4": "4ºB - Gilmara",
+    "Quarta-h3": "3ºE - Michele",
+    "Quarta-h4": "4ºA - Michele",
     "Quinta-h1": "5ºC - Heloísa",
     "Quinta-h2": "3ºB - Isabel",
     "Quinta-h3": "3ºA / 4ºD",
-    "Quinta-h4": "3ºC / 5ºA",
-    "Sexta-h1": "5ºB - Heloísa",
-    "Sexta-h2": "5ºC - Heloísa"
+    "Quinta-h4": "5ºA - Márcia",
+    "Sexta-h1": "5ºB - Claudete",
+    "Sexta-h2": "5ºC - Claudete"
 };
 
 let currentWeekOffset = 0;
