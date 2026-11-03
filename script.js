@@ -130,16 +130,14 @@ window.saveBooking = function() {
         return;
     }
 
+    if (!currentSlotKey || fixedClasses[currentSlotKey] || (bookings[currentWeekKey] || {})[currentSlotKey]) {
+        alert("Este horário já está reservado ou indisponível.");
+        return;
+    }
+
     set(ref(db, `${PATH_BANCO}/${currentWeekKey}/${currentSlotKey}`), { prof, series })
     .then(() => window.closeModal())
-    .catch((error) => alert("Erro ao salvar: " + error.message));
-};
-
-window.deleteBooking = function() {
-    if (confirm("Deseja mesmo cancelar esta reserva e liberar a sala?")) {
-        set(ref(db, `${PATH_BANCO}/${currentWeekKey}/${currentSlotKey}`), null)
-        .then(() => window.closeModal());
-    }
+    .catch((error) => alert(error.code === "PERMISSION_DENIED" || error.code === "database/permission-denied" ? "Não foi possível reservar. O horário pode já ter sido ocupado. Atualize a página e confira a disponibilidade." : "Erro ao salvar: " + error.message));
 };
 
 window.openSlot = function(day, hourId, range, fullDayLabel) {
