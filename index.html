@@ -94,7 +94,17 @@
                 <strong style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Turma / Ano</strong>
                 <p id="view-series" style="font-size: 14px; font-weight: 600; margin-top: 4px; color: var(--text-main);"></p>
             </div>
-            <p style="font-size: 13px; color: var(--text-muted);">Para cancelar ou corrigir esta reserva, procure o responsável pela sala de informática.</p>
+            <details id="cancel-details">
+                <summary>Cancelar reserva</summary>
+                <form id="cancel-form">
+                    <div class="form-group">
+                        <label for="cancel-password">Senha de cancelamento</label>
+                        <input id="cancel-password" type="password" autocomplete="off" required>
+                    </div>
+                    <button class="btn btn-delete" type="submit">Confirmar cancelamento</button>
+                    <p id="cancel-status" role="status"></p>
+                </form>
+            </details>
             <button class="btn btn-cancel" style="width: 100%; margin-top: 8px;" onclick="closeModal()">Fechar</button>
         </div>
     </div>
