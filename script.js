@@ -121,23 +121,47 @@ window.closeModal = function() {
     document.getElementById("modal-overlay").classList.remove("active");
 };
 
+const WEEKLY_BOOKING_LIMIT = 3;
+
+function normalizeTeacherName(name) {
+    return String(name ?? "").normalize("NFC").toLocaleLowerCase("pt-BR").replace(/\./g, "").trim().replace(/\s+/g, " ");
+}
+
+function hasReachedWeeklyLimit(weekBookings, normalizedName) {
+    return Object.values(weekBookings).filter(
+        booking => normalizeTeacherName(booking?.prof) === normalizedName
+    ).length >= WEEKLY_BOOKING_LIMIT;
+}
+
+let bookingInProgress = false;
+
 window.saveBooking = function() {
+    if (bookingInProgress) return;
     const prof = document.getElementById("prof-name-input").value.trim();
     const series = document.getElementById("series-input").value.trim();
 
-    if (!prof || !series) {
+    const normalizedName = normalizeTeacherName(prof);
+    if (!normalizedName || !series) {
         alert("Atenção: É necessário preencher o Nome e a Série!");
         return;
     }
 
-    if (!currentSlotKey || fixedClasses[currentSlotKey] || (bookings[currentWeekKey] || {})[currentSlotKey]) {
+    const weekBookings = bookings[currentWeekKey] || {};
+    if (!currentSlotKey || fixedClasses[currentSlotKey] || weekBookings[currentSlotKey]) {
         alert("Este horário já está reservado ou indisponível.");
         return;
     }
 
+    if (hasReachedWeeklyLimit(weekBookings, normalizedName)) {
+        alert("Limite semanal atingido: este nome já tem 3 reservas nesta semana.");
+        return;
+    }
+
+    bookingInProgress = true;
     set(ref(db, `${PATH_BANCO}/${currentWeekKey}/${currentSlotKey}`), { prof, series })
     .then(() => window.closeModal())
-    .catch((error) => alert(error.code === "PERMISSION_DENIED" || error.code === "database/permission-denied" ? "Não foi possível reservar. O horário pode já ter sido ocupado. Atualize a página e confira a disponibilidade." : "Erro ao salvar: " + error.message));
+    .catch((error) => alert(error.code === "PERMISSION_DENIED" || error.code === "database/permission-denied" ? "Não foi possível reservar. O horário pode já ter sido ocupado. Atualize a página e confira a disponibilidade." : "Erro ao salvar: " + error.message))
+    .finally(() => { bookingInProgress = false; });
 };
 
 window.openSlot = function(day, hourId, range, fullDayLabel) {
