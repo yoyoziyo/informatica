@@ -1,6 +1,6 @@
 // 1. Importando as funções necessárias do Firebase via CDN (Web)
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+import { getDatabase, ref, set, onValue, runTransaction } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
 // 2. Suas configurações oficiais do Firebase
 const firebaseConfig = {
@@ -164,11 +164,58 @@ window.saveBooking = function() {
     .finally(() => { bookingInProgress = false; });
 };
 
+const cancelForm = document.getElementById("cancel-form");
+const cancelStatus = document.getElementById("cancel-status");
+const cancelDetails = document.getElementById("cancel-details");
+let cancellationTarget;
+
+if (cancelForm) cancelForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!cancellationTarget || cancelForm.querySelector("button").disabled) return;
+    const { week, slot, booking } = cancellationTarget;
+    const button = cancelForm.querySelector("button");
+    const password = cancelForm.elements["cancel-password"].value;
+    cancelForm.reset();
+    button.disabled = true;
+    cancelStatus.textContent = "Verificando senha…";
+    let auth, signOut;
+    try {
+        const sdk = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js");
+        auth = sdk.initializeAuth(app, { persistence: sdk.inMemoryPersistence });
+        signOut = sdk.signOut;
+        await sdk.signInWithEmailAndPassword(auth, "cancelamento@emef-informatica.invalid", password);
+        const result = await runTransaction(ref(db, `${PATH_BANCO}/${week}/${slot}`), (current) => {
+            if (current?.prof === booking.prof && current?.series === booking.series) return null;
+        }, { applyLocally: false });
+        if (result.committed) {
+            if (cancellationTarget?.booking === booking) window.closeModal();
+        } else {
+            cancelStatus.textContent = "A reserva mudou ou já foi cancelada. Abra o horário novamente.";
+        }
+    } catch (error) {
+        cancelStatus.textContent = ["auth/invalid-credential", "auth/wrong-password", "auth/user-not-found"].includes(error.code)
+            ? "Senha incorreta ou cancelamento ainda não configurado."
+            : "Não foi possível cancelar. Confira a configuração no Firebase e tente novamente.";
+    } finally {
+        try { if (auth?.currentUser) await signOut(auth); }
+        finally { button.disabled = false; }
+    }
+});
+
 window.openSlot = function(day, hourId, range, fullDayLabel) {
     currentSlotKey = `${day}-${hourId}`;
     document.getElementById("modal-datetime").innerText = `${fullDayLabel} — ${range}`;
     
     const weekBookings = bookings[currentWeekKey] || {};
+
+    cancellationTarget = weekBookings[currentSlotKey]
+        ? { week: currentWeekKey, slot: currentSlotKey, booking: weekBookings[currentSlotKey] }
+        : undefined;
+    if (cancelForm) {
+        cancelForm.reset();
+        cancelDetails.open = false;
+        cancelStatus.textContent = "";
+    }
 
     if (weekBookings[currentSlotKey]) {
         document.getElementById("modal-title").innerText = "Horário Reservado";
