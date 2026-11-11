@@ -4,18 +4,48 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SAGE - Sistema de Agendamento Escolar | EMEF VILMA</title>
-    <link rel="stylesheet" href="style.css">
+    <script>
+(() => {
+    const key = "sage-informatica-theme";
+    const themes = ["auto", "light", "dark"];
+    let preference = "auto";
+    try {
+        const saved = localStorage.getItem(key);
+        if (themes.includes(saved)) preference = saved;
+    } catch {}
+    document.documentElement.dataset.theme = preference;
+    document.addEventListener("DOMContentLoaded", () => {
+        const select = document.getElementById("theme-select");
+        select.value = preference;
+        select.addEventListener("change", () => {
+            if (!themes.includes(select.value)) return;
+            document.documentElement.dataset.theme = select.value;
+            try { localStorage.setItem(key, select.value); } catch {}
+        });
+    });
+})();
+    </script>
+    <link rel="stylesheet" href="style.css?v=tema-1">
 </head>
 <body>
 
 <div class="app-container">
     <header>
         <div class="header-title">
-            <h1>SAGE - EMEF VILMA</h1>
-            <p>Painel Avançado de Ocupação do Laboratório de Informática</p>
+            <span class="school-label">SAGE · EMEF VILMA</span>
+            <h1>Agenda do laboratório</h1>
+            <p>Consulte os horários e reserve a sala de informática.</p>
         </div>
         
-        <div class="week-controls">
+        <label class="theme-control" for="theme-select">
+            Tema
+            <select id="theme-select">
+                <option value="auto">Automático</option>
+                <option value="light">Claro</option>
+                <option value="dark">Escuro</option>
+            </select>
+        </label>
+        <div class="week-controls" aria-label="Navegação entre semanas">
             <button class="btn-nav" onclick="changeWeek(-1)">◀ Voltar</button>
             <span class="current-week-label" id="current-week-label">Carregando...</span>
             <button class="btn-nav" onclick="changeWeek(1)">Avançar ▶</button>
