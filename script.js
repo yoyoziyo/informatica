@@ -143,6 +143,7 @@ function hasReachedWeeklyLimit(weekBookings, normalizedName) {
 
 
 const TEACHER_NAMES = ["Rose", "Paulo", "Michele", "Marcia", "Jessica", "Isabel", "Heloisa", "Gilmara", "Fatima", "Clelia", "Claudete"];
+let approvedTeachers = {};
 let selectedTeacher = null;
 let formWeek = "";
 const teacherInput = document.getElementById("prof-name-input");
@@ -150,7 +151,12 @@ const teacherResults = document.getElementById("teacher-results");
 const bookingStatus = document.getElementById("booking-status");
 
 function teacherDirectory() {
-    return TEACHER_NAMES.map(name => ({ key: normalizeTeacherName(name), name }));
+    const names = new Map(TEACHER_NAMES.map(name => [normalizeTeacherName(name), name]));
+    Object.values(approvedTeachers).forEach(teacher => {
+        const key = normalizeTeacherName(teacher?.name);
+        if (key && !names.has(key)) names.set(key, teacher.name);
+    });
+    return [...names].map(([key, name]) => ({ key, name }));
 }
 
 function weeklyTeacherCount(key) {
@@ -186,6 +192,56 @@ function showTeacherOptions() {
 
 teacherInput.addEventListener("input", showTeacherOptions);
 teacherInput.addEventListener("focus", () => { if (!selectedTeacher) showTeacherOptions(); });
+
+onValue(ref(db, "approvedTeachers"), snapshot => {
+    approvedTeachers = snapshot.val() || {};
+    if (!selectedTeacher && document.getElementById("modal-overlay").classList.contains("active")) showTeacherOptions();
+}, () => {
+    document.getElementById("teacher-add-status").textContent = "Libere approvedTeachers nas regras do Firebase para carregar novos nomes.";
+});
+
+let privilegedActionInProgress = false;
+document.getElementById("teacher-add-form").addEventListener("submit", async event => {
+    event.preventDefault();
+    if (privilegedActionInProgress) return;
+    const form = event.currentTarget;
+    const status = document.getElementById("teacher-add-status");
+    const button = form.querySelector("button");
+    const name = form.elements["new-teacher-name"].value.trim().replace(/\s+/g, " ");
+    const key = normalizeTeacherName(name);
+    if (key.length < 3 || name.length > 100 || !/^[\p{L}\s.'’-]+$/u.test(name)) {
+        status.textContent = "Informe um nome válido, com 3 a 100 caracteres."; return;
+    }
+    const existing = teacherDirectory().find(teacher => teacher.key === key);
+    if (existing) { chooseTeacher(existing); status.textContent = "Esse nome já está na lista."; return; }
+    const password = form.elements["teacher-add-password"].value;
+    form.elements["teacher-add-password"].value = "";
+    button.disabled = true;
+    privilegedActionInProgress = true;
+    status.textContent = "Verificando senha…";
+    let auth, signOut;
+    try {
+        const sdk = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js");
+        auth = sdk.initializeAuth(app, { persistence: sdk.inMemoryPersistence });
+        signOut = sdk.signOut;
+        await sdk.signInWithEmailAndPassword(auth, "cancelamento@emef-informatica.invalid", password);
+        const id = Array.from(key).map(char => char.codePointAt(0).toString(16)).join("-");
+        const result = await runTransaction(ref(db, "approvedTeachers/" + id), current => current || { name }, { applyLocally: false });
+        const teacher = result.snapshot.val();
+        approvedTeachers[id] = teacher;
+        chooseTeacher({ key: normalizeTeacherName(teacher.name), name: teacher.name });
+        form.elements["new-teacher-name"].value = "";
+        status.textContent = "Nome adicionado e selecionado.";
+    } catch (error) {
+        status.textContent = ["auth/invalid-credential", "auth/wrong-password", "auth/user-not-found"].includes(error.code)
+            ? "Senha incorreta."
+            : "Não foi possível adicionar. Confira a conexão e as regras do Firebase.";
+    } finally {
+        try { if (auth?.currentUser) await signOut(auth); }
+        finally { button.disabled = false; privilegedActionInProgress = false; }
+    }
+});
+
 let bookingInProgress = false;
 
 window.saveBooking = function() {
@@ -224,7 +280,8 @@ let cancellationTarget;
 
 if (cancelForm) cancelForm.addEventListener("submit", async (event) => {
     event.preventDefault();
-    if (!cancellationTarget || cancelForm.querySelector("button").disabled) return;
+    if (!cancellationTarget || privilegedActionInProgress || cancelForm.querySelector("button").disabled) return;
+    privilegedActionInProgress = true;
     const { week, slot, booking } = cancellationTarget;
     const button = cancelForm.querySelector("button");
     const password = cancelForm.elements["cancel-password"].value;
@@ -251,7 +308,7 @@ if (cancelForm) cancelForm.addEventListener("submit", async (event) => {
             : "Não foi possível cancelar. Confira a configuração no Firebase e tente novamente.";
     } finally {
         try { if (auth?.currentUser) await signOut(auth); }
-        finally { button.disabled = false; }
+        finally { button.disabled = false; privilegedActionInProgress = false; }
     }
 });
 
@@ -259,6 +316,9 @@ window.openSlot = function(day, hourId, range, fullDayLabel) {
     currentSlotKey = `${day}-${hourId}`;
     formWeek = currentWeekKey;
     selectedTeacher = null;
+    document.getElementById("teacher-add-form").reset();
+    document.getElementById("teacher-add-details").open = false;
+    document.getElementById("teacher-add-status").textContent = "";
     teacherResults.replaceChildren();
     bookingStatus.textContent = "";
     document.getElementById("modal-datetime").innerText = `${fullDayLabel} — ${range}`;
