@@ -142,7 +142,7 @@ function hasReachedWeeklyLimit(weekBookings, normalizedName) {
 }
 
 
-let teacherRegistry = {};
+const TEACHER_NAMES = ["Rose", "Paulo", "Michele", "Marcia", "Jessica", "Isabel", "Heloisa", "Gilmara", "Fatima", "Clelia", "Claudete"];
 let selectedTeacher = null;
 let formWeek = "";
 const teacherInput = document.getElementById("prof-name-input");
@@ -150,15 +150,7 @@ const teacherResults = document.getElementById("teacher-results");
 const bookingStatus = document.getElementById("booking-status");
 
 function teacherDirectory() {
-    const entries = new Map();
-    const add = name => {
-        const key = normalizeTeacherName(name);
-        if (key && !entries.has(key)) entries.set(key, { key, name: String(name).trim().replace(/^(professora|professor|prof[ªºa]?)[.\s]+/iu, "") });
-    };
-    Object.values(teacherRegistry).forEach(t => add(t?.name));
-    Object.values(bookings).forEach(week => Object.values(week || {}).forEach(b => add(b?.prof)));
-    Object.values(fixedClasses).forEach(label => { if (label.includes(" - ")) add(label.split(" - ")[1]); });
-    return [...entries.values()].sort((a,b) => a.name.localeCompare(b.name, "pt-BR"));
+    return TEACHER_NAMES.map(name => ({ key: normalizeTeacherName(name), name }));
 }
 
 function weeklyTeacherCount(key) {
@@ -194,58 +186,11 @@ function showTeacherOptions() {
 
 teacherInput.addEventListener("input", showTeacherOptions);
 teacherInput.addEventListener("focus", () => { if (!selectedTeacher) showTeacherOptions(); });
-onValue(ref(db, "teachers"), snapshot => {
-    teacherRegistry = snapshot.val() || {};
-    if (!selectedTeacher && document.getElementById("modal-overlay").classList.contains("active")) showTeacherOptions();
-}, () => {
-    document.getElementById("teacher-add-status").textContent = "O cadastro de novos nomes precisa ser liberado nas regras do Firebase.";
-});
-
-function nameDistance(a, b) {
-    let previous = Array.from({length: b.length + 1}, (_,i) => i);
-    for (let i = 1; i <= a.length; i++) {
-        const row = [i];
-        for (let k = 1; k <= b.length; k++) row[k] = Math.min(row[k-1]+1, previous[k]+1, previous[k-1]+(a[i-1] === b[k-1] ? 0 : 1));
-        previous = row;
-    }
-    return previous[b.length];
-}
-
-document.getElementById("add-teacher-button").addEventListener("click", async () => {
-    const input = document.getElementById("new-teacher-name");
-    const status = document.getElementById("teacher-add-status");
-    const button = document.getElementById("add-teacher-button");
-    const name = input.value.trim().replace(/\s+/g, " ");
-    const key = normalizeTeacherName(name);
-    if (key.length < 3 || name.length > 100 || !/^[\p{L}\s.'’-]+$/u.test(name)) {
-        status.textContent = "Informe um nome válido, com 3 a 100 caracteres."; return;
-    }
-    const existing = teacherDirectory().find(t => t.key === key || nameDistance(t.key, key) <= 1);
-    if (existing) {
-        chooseTeacher(existing);
-        status.textContent = "Nome igual ou muito parecido já cadastrado. Selecionamos " + existing.name + ".";
-        return;
-    }
-    button.disabled = true;
-    status.textContent = "Salvando…";
-    try {
-        const id = Array.from(key).map(char => char.codePointAt(0).toString(16)).join("-");
-        const result = await runTransaction(ref(db, "teachers/" + id), current => current || { name }, { applyLocally: false });
-        const saved = result.snapshot.val();
-        teacherRegistry[id] = saved;
-        chooseTeacher({ key: normalizeTeacherName(saved.name), name: saved.name });
-        input.value = "";
-        status.textContent = "Professora cadastrada e selecionada.";
-    } catch {
-        status.textContent = "Não foi possível salvar. Confira a conexão e as regras de cadastro no Firebase.";
-    } finally { button.disabled = false; }
-});
-
 let bookingInProgress = false;
 
 window.saveBooking = function() {
     if (bookingInProgress) return;
-    const prof = selectedTeacher?.name || "";
+    const prof = teacherDirectory().find(teacher => teacher.key === selectedTeacher?.key)?.name || "";
     const series = document.getElementById("series-input").value.trim();
 
     const normalizedName = normalizeTeacherName(prof);
@@ -316,9 +261,6 @@ window.openSlot = function(day, hourId, range, fullDayLabel) {
     selectedTeacher = null;
     teacherResults.replaceChildren();
     bookingStatus.textContent = "";
-    document.getElementById("teacher-add-details").open = false;
-    document.getElementById("teacher-add-status").textContent = "";
-    document.getElementById("new-teacher-name").value = "";
     document.getElementById("modal-datetime").innerText = `${fullDayLabel} — ${range}`;
     
     const weekBookings = bookings[currentWeekKey] || {};
