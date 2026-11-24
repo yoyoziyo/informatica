@@ -101,9 +101,13 @@
         <p id="modal-datetime"></p>
         
         <div id="form-container">
+            <p id="weekly-limit-notice" style="padding: 12px; border: 1px solid var(--border-fixed); border-radius: 10px; background: var(--bg-fixed); color: var(--text-fixed); line-height: 1.5;">
+                <strong>Limite: 3 aulas por semana por professora.</strong><br>
+                Use sempre seu nome completo. Alterar a escrita do nome não permite reservas extras.
+            </p>
             <div class="form-group">
                 <label for="prof-name-input">Nome do Professor *</label>
-                <input type="text" id="prof-name-input" placeholder="Ex: Profª Ana">
+                <input type="text" id="prof-name-input" aria-describedby="weekly-limit-notice" placeholder="Ex: Profª Ana">
             </div>
             <div class="form-group">
                 <label for="series-input">Série / Turma *</label>
