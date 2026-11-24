@@ -528,3 +528,12 @@ th, td { border-radius: 10px; overflow-wrap: anywhere; }
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
 }
+
+.teacher-results { display: grid; gap: 6px; max-height: 180px; overflow-y: auto; margin-bottom: 12px; }
+.teacher-option { padding: 10px 12px; text-align: left; background: var(--surface-soft); border: 1px solid var(--border); color: var(--text-main); border-radius: 8px; cursor: pointer; font: inherit; }
+.teacher-option:hover, .teacher-option:focus-visible { border-color: var(--color-fixed); background: var(--bg-fixed); }
+#teacher-add-details { font-size: 13px; margin-bottom: 14px; }
+#teacher-add-details summary { cursor: pointer; color: var(--accent); padding: 6px 0 12px; }
+#booking-status { color: var(--text-occupied); line-height: 1.5; }
+#booking-status:empty { display: none; }
+button:disabled { opacity: .6; cursor: wait; }
