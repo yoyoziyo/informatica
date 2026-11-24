@@ -141,34 +141,134 @@ function hasReachedWeeklyLimit(weekBookings, normalizedName) {
     ).length >= WEEKLY_BOOKING_LIMIT;
 }
 
+
+let teacherRegistry = {};
+let selectedTeacher = null;
+let formWeek = "";
+const teacherInput = document.getElementById("prof-name-input");
+const teacherResults = document.getElementById("teacher-results");
+const bookingStatus = document.getElementById("booking-status");
+
+function teacherDirectory() {
+    const entries = new Map();
+    const add = name => {
+        const key = normalizeTeacherName(name);
+        if (key && !entries.has(key)) entries.set(key, { key, name: String(name).trim().replace(/^(professora|professor|prof[ªºa]?)[.\s]+/iu, "") });
+    };
+    Object.values(teacherRegistry).forEach(t => add(t?.name));
+    Object.values(bookings).forEach(week => Object.values(week || {}).forEach(b => add(b?.prof)));
+    Object.values(fixedClasses).forEach(label => { if (label.includes(" - ")) add(label.split(" - ")[1]); });
+    return [...entries.values()].sort((a,b) => a.name.localeCompare(b.name, "pt-BR"));
+}
+
+function weeklyTeacherCount(key) {
+    return Object.values(bookings[formWeek] || {}).filter(b => normalizeTeacherName(b?.prof) === key).length;
+}
+
+function chooseTeacher(teacher) {
+    selectedTeacher = teacher;
+    teacherInput.value = teacher.name;
+    teacherResults.replaceChildren();
+    const count = weeklyTeacherCount(teacher.key);
+    bookingStatus.textContent = count >= 3
+        ? "Limite semanal atingido: esta professora já reservou 3 aulas nesta semana."
+        : teacher.name + ": " + count + " de 3 aulas reservadas nesta semana.";
+}
+
+function showTeacherOptions() {
+    selectedTeacher = null;
+    bookingStatus.textContent = "Selecione uma professora na lista.";
+    const query = normalizeTeacherName(teacherInput.value);
+    teacherResults.replaceChildren();
+    const matches = teacherDirectory().filter(t => t.key.includes(query));
+    matches.forEach(teacher => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "teacher-option";
+        button.textContent = teacher.name + " · " + weeklyTeacherCount(teacher.key) + "/3";
+        button.addEventListener("click", () => chooseTeacher(teacher));
+        teacherResults.appendChild(button);
+    });
+    if (!matches.length) teacherResults.textContent = "Nenhuma professora encontrada.";
+}
+
+teacherInput.addEventListener("input", showTeacherOptions);
+teacherInput.addEventListener("focus", () => { if (!selectedTeacher) showTeacherOptions(); });
+onValue(ref(db, "teachers"), snapshot => {
+    teacherRegistry = snapshot.val() || {};
+    if (!selectedTeacher && document.getElementById("modal-overlay").classList.contains("active")) showTeacherOptions();
+}, () => {
+    document.getElementById("teacher-add-status").textContent = "O cadastro de novos nomes precisa ser liberado nas regras do Firebase.";
+});
+
+function nameDistance(a, b) {
+    let previous = Array.from({length: b.length + 1}, (_,i) => i);
+    for (let i = 1; i <= a.length; i++) {
+        const row = [i];
+        for (let k = 1; k <= b.length; k++) row[k] = Math.min(row[k-1]+1, previous[k]+1, previous[k-1]+(a[i-1] === b[k-1] ? 0 : 1));
+        previous = row;
+    }
+    return previous[b.length];
+}
+
+document.getElementById("add-teacher-button").addEventListener("click", async () => {
+    const input = document.getElementById("new-teacher-name");
+    const status = document.getElementById("teacher-add-status");
+    const button = document.getElementById("add-teacher-button");
+    const name = input.value.trim().replace(/\s+/g, " ");
+    const key = normalizeTeacherName(name);
+    if (key.length < 3 || name.length > 100 || !/^[\p{L}\s.'’-]+$/u.test(name)) {
+        status.textContent = "Informe um nome válido, com 3 a 100 caracteres."; return;
+    }
+    const existing = teacherDirectory().find(t => t.key === key || nameDistance(t.key, key) <= 1);
+    if (existing) {
+        chooseTeacher(existing);
+        status.textContent = "Nome igual ou muito parecido já cadastrado. Selecionamos " + existing.name + ".";
+        return;
+    }
+    button.disabled = true;
+    status.textContent = "Salvando…";
+    try {
+        const id = Array.from(key).map(char => char.codePointAt(0).toString(16)).join("-");
+        const result = await runTransaction(ref(db, "teachers/" + id), current => current || { name }, { applyLocally: false });
+        const saved = result.snapshot.val();
+        teacherRegistry[id] = saved;
+        chooseTeacher({ key: normalizeTeacherName(saved.name), name: saved.name });
+        input.value = "";
+        status.textContent = "Professora cadastrada e selecionada.";
+    } catch {
+        status.textContent = "Não foi possível salvar. Confira a conexão e as regras de cadastro no Firebase.";
+    } finally { button.disabled = false; }
+});
+
 let bookingInProgress = false;
 
 window.saveBooking = function() {
     if (bookingInProgress) return;
-    const prof = document.getElementById("prof-name-input").value.trim();
+    const prof = selectedTeacher?.name || "";
     const series = document.getElementById("series-input").value.trim();
 
     const normalizedName = normalizeTeacherName(prof);
     if (!normalizedName || !series) {
-        alert("Atenção: É necessário preencher o Nome e a Série!");
+        bookingStatus.textContent = "Selecione uma professora da lista e preencha a turma.";
         return;
     }
 
-    const weekBookings = bookings[currentWeekKey] || {};
+    const weekBookings = bookings[formWeek] || {};
     if (!currentSlotKey || fixedClasses[currentSlotKey] || weekBookings[currentSlotKey]) {
-        alert("Este horário já está reservado ou indisponível.");
+        bookingStatus.textContent = "Este horário já está reservado ou indisponível.";
         return;
     }
 
     if (hasReachedWeeklyLimit(weekBookings, normalizedName)) {
-        alert("Limite semanal atingido: cada professora pode reservar no máximo 3 aulas por semana. Alterar a escrita do nome não aumenta esse limite.");
+        bookingStatus.textContent = "Limite semanal atingido: esta professora já reservou 3 aulas nesta semana.";
         return;
     }
 
     bookingInProgress = true;
-    set(ref(db, `${PATH_BANCO}/${currentWeekKey}/${currentSlotKey}`), { prof, series })
+    set(ref(db, `${PATH_BANCO}/${formWeek}/${currentSlotKey}`), { prof, series })
     .then(() => window.closeModal())
-    .catch((error) => alert(error.code === "PERMISSION_DENIED" || error.code === "database/permission-denied" ? "Não foi possível reservar. O horário pode já ter sido ocupado. Atualize a página e confira a disponibilidade." : "Erro ao salvar: " + error.message))
+    .catch((error) => bookingStatus.textContent = (error.code === "PERMISSION_DENIED" || error.code === "database/permission-denied" ? "Não foi possível reservar. O horário pode já ter sido ocupado. Atualize a página e confira a disponibilidade." : "Erro ao salvar: " + error.message))
     .finally(() => { bookingInProgress = false; });
 };
 
@@ -212,6 +312,13 @@ if (cancelForm) cancelForm.addEventListener("submit", async (event) => {
 
 window.openSlot = function(day, hourId, range, fullDayLabel) {
     currentSlotKey = `${day}-${hourId}`;
+    formWeek = currentWeekKey;
+    selectedTeacher = null;
+    teacherResults.replaceChildren();
+    bookingStatus.textContent = "";
+    document.getElementById("teacher-add-details").open = false;
+    document.getElementById("teacher-add-status").textContent = "";
+    document.getElementById("new-teacher-name").value = "";
     document.getElementById("modal-datetime").innerText = `${fullDayLabel} — ${range}`;
     
     const weekBookings = bookings[currentWeekKey] || {};
