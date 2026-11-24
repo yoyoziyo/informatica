@@ -25,7 +25,7 @@
     });
 })();
     </script>
-    <link rel="stylesheet" href="style.css?v=lista-unica-3">
+    <link rel="stylesheet" href="style.css?v=cadastro-senha-4">
 </head>
 <body>
 
@@ -110,6 +110,21 @@
                 <input type="text" id="prof-name-input" aria-describedby="weekly-limit-notice" placeholder="Digite para buscar: Jessica, Rose…" autocomplete="off" aria-controls="teacher-results">
             </div>
             <div id="teacher-results" class="teacher-results" aria-label="Professoras encontradas"></div>
+            <details id="teacher-add-details">
+                <summary>Não tem seu nome? Adicione com senha</summary>
+                <form id="teacher-add-form">
+                    <div class="form-group">
+                        <label for="new-teacher-name">Nome da professora ou professor</label>
+                        <input id="new-teacher-name" type="text" maxlength="100" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="teacher-add-password">Senha do cancelamento</label>
+                        <input id="teacher-add-password" type="password" autocomplete="off" required>
+                    </div>
+                    <button type="submit" class="btn btn-save">Adicionar nome</button>
+                    <p id="teacher-add-status" role="status" aria-live="polite"></p>
+                </form>
+            </details>
             <p id="booking-status" role="status" aria-live="polite"></p>
             <div class="form-group">
                 <label for="series-input">Série / Turma *</label>
@@ -146,6 +161,6 @@
     </div>
 </div>
 
-<script type="module" src="script.js?v=lista-unica-3"></script>
+<script type="module" src="script.js?v=cadastro-senha-4"></script>
 </body>
 </html>
