@@ -124,7 +124,15 @@ window.closeModal = function() {
 const WEEKLY_BOOKING_LIMIT = 3;
 
 function normalizeTeacherName(name) {
-    return String(name ?? "").normalize("NFC").toLocaleLowerCase("pt-BR").replace(/\./g, "").trim().replace(/\s+/g, " ");
+    return String(name ?? "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLocaleLowerCase("pt-BR")
+        .replace(/\./g, "")
+        .trim()
+        .replace(/^(?:(?:professora|professor|prof[ªºa]?)(?:\s+|$))+/u, "")
+        .trim()
+        .replace(/\s+/g, " ");
 }
 
 function hasReachedWeeklyLimit(weekBookings, normalizedName) {
@@ -153,7 +161,7 @@ window.saveBooking = function() {
     }
 
     if (hasReachedWeeklyLimit(weekBookings, normalizedName)) {
-        alert("Limite semanal atingido: este nome já tem 3 reservas nesta semana.");
+        alert("Limite semanal atingido: cada professora pode reservar no máximo 3 aulas por semana. Alterar a escrita do nome não aumenta esse limite.");
         return;
     }
 
