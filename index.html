@@ -25,7 +25,7 @@
     });
 })();
     </script>
-    <link rel="stylesheet" href="style.css?v=tema-1">
+    <link rel="stylesheet" href="style.css?v=cadastro-2">
 </head>
 <body>
 
@@ -103,12 +103,23 @@
         <div id="form-container">
             <p id="weekly-limit-notice" style="padding: 12px; border: 1px solid var(--border-fixed); border-radius: 10px; background: var(--bg-fixed); color: var(--text-fixed); line-height: 1.5;">
                 <strong>Limite: 3 aulas por semana por professora.</strong><br>
-                Use sempre seu nome completo. Alterar a escrita do nome não permite reservas extras.
+                Selecione seu cadastro. O limite é por professora, independentemente da turma.
             </p>
             <div class="form-group">
-                <label for="prof-name-input">Nome do Professor *</label>
-                <input type="text" id="prof-name-input" aria-describedby="weekly-limit-notice" placeholder="Ex: Profª Ana">
+                <label for="prof-name-input">Selecione a professora *</label>
+                <input type="text" id="prof-name-input" aria-describedby="weekly-limit-notice" placeholder="Digite para buscar: Jessica, Rose…" autocomplete="off" aria-controls="teacher-results">
             </div>
+            <div id="teacher-results" class="teacher-results" aria-label="Professoras encontradas"></div>
+            <details id="teacher-add-details">
+                <summary>Não tem seu nome? Adicione</summary>
+                <div class="form-group">
+                    <label for="new-teacher-name">Nome completo da professora</label>
+                    <input id="new-teacher-name" type="text" maxlength="100" autocomplete="off">
+                </div>
+                <button id="add-teacher-button" type="button" class="btn btn-cancel">Adicionar e selecionar</button>
+                <p id="teacher-add-status" role="status"></p>
+            </details>
+            <p id="booking-status" role="status" aria-live="polite"></p>
             <div class="form-group">
                 <label for="series-input">Série / Turma *</label>
                 <input type="text" id="series-input" placeholder="Ex: 5º Ano B">
@@ -144,6 +155,6 @@
     </div>
 </div>
 
-<script type="module" src="script.js"></script>
+<script type="module" src="script.js?v=cadastro-2"></script>
 </body>
 </html>
