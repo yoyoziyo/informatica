@@ -36,7 +36,7 @@ const morningHours = [
     { id: "m5", range: "10:40 - 11:30", label: "5ª Aula" }
 ];
 const shiftHours = { morning: morningHours, afternoon: afternoonHours };
-let currentShift = new Date().getHours() < 12 ? "morning" : "afternoon";
+let currentShift = "afternoon";
 
 const days = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta"];
 
