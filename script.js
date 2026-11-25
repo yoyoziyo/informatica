@@ -261,6 +261,31 @@ document.getElementById("teacher-add-form").addEventListener("submit", async eve
     }
 });
 
+document.getElementById("teacher-request-form").addEventListener("submit", event => {
+    event.preventDefault();
+    const input = document.getElementById("teacher-request-name");
+    const status = document.getElementById("teacher-request-status");
+    const name = input.value.trim().replace(/\s+/g, " ");
+    const key = normalizeTeacherName(name);
+    if (key.length < 3 || name.length > 100 || !/^[\p{L}\s.'’-]+$/u.test(name)) {
+        status.textContent = "Informe seu nome, com 3 a 100 caracteres."; return;
+    }
+    const existing = teacherDirectory().find(teacher => teacher.key === key);
+    if (existing) {
+        chooseTeacher(existing);
+        status.textContent = "Seu nome já está na lista e foi selecionado.";
+        return;
+    }
+    const message = [
+        "Olá! Gostaria de solicitar a inclusão do meu nome no sistema de agendamento da sala de informática da EMEF Vilma.",
+        "Meu nome: " + name,
+        "Pode adicionar, por favor?"
+    ].join("\n\n");
+    const url = "https://wa.me/5515998310087?text=" + encodeURIComponent(message);
+    window.open(url, "_blank", "noopener,noreferrer");
+    status.textContent = "Envie a mensagem no WhatsApp. Após a inclusão pelo responsável, seu nome ficará disponível na lista.";
+});
+
 let bookingInProgress = false;
 
 const BOOKING_WINDOW_MESSAGE = "Limite de antecedência: os agendamentos são permitidos somente para a semana atual e a próxima. Selecione uma dessas semanas.";
@@ -350,6 +375,9 @@ window.openSlot = function(day, hourId, range, fullDayLabel) {
     currentSlotKey = `${day}-${hourId}`;
     formWeek = currentWeekKey;
     selectedTeacher = null;
+    document.getElementById("teacher-request-form").reset();
+    document.getElementById("teacher-request-details").open = false;
+    document.getElementById("teacher-request-status").textContent = "";
     document.getElementById("teacher-add-form").reset();
     document.getElementById("teacher-add-details").open = false;
     document.getElementById("teacher-add-status").textContent = "";
