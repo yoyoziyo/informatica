@@ -537,3 +537,17 @@ th, td { border-radius: 10px; overflow-wrap: anywhere; }
 #booking-status { color: var(--text-occupied); line-height: 1.5; }
 #booking-status:empty { display: none; }
 button:disabled { opacity: .6; cursor: wait; }
+
+.shift-toolbar { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; margin-bottom: 22px; padding: 16px; background: var(--surface-soft); border: 1px solid var(--border); border-radius: 16px; }
+.shift-selector { display: flex; gap: 4px; padding: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
+.shift-selector button { padding: 10px 22px; border: 0; border-radius: 8px; background: transparent; color: var(--text-muted); font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
+.shift-selector button[aria-pressed="true"] { background: #2458bb; color: #fff; box-shadow: 0 3px 9px #2458bb33; }
+.shift-selector button:hover { outline: 1px solid var(--border-fixed); }
+.shift-info { display: grid; gap: 4px; }
+.shift-info strong { font-size: 14px; color: var(--text-main); }
+.shift-info span { font-size: 12px; line-height: 1.5; color: var(--text-muted); }
+@media (max-width: 768px) {
+    .shift-toolbar { gap: 12px; padding: 12px; }
+    .shift-selector { width: 100%; }
+    .shift-selector button { flex: 1; }
+}
