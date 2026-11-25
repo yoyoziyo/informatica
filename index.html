@@ -25,7 +25,7 @@
     });
 })();
     </script>
-    <link rel="stylesheet" href="style.css?v=turnos-5">
+    <link rel="stylesheet" href="style.css?v=pedido-whatsapp-6">
 </head>
 <body>
 
@@ -121,8 +121,20 @@
                 <input type="text" id="prof-name-input" aria-describedby="weekly-limit-notice" placeholder="Digite para buscar: Jessica, Rose…" autocomplete="off" aria-controls="teacher-results">
             </div>
             <div id="teacher-results" class="teacher-results" aria-label="Professoras encontradas"></div>
+            <details id="teacher-request-details" style="margin-bottom: 16px; font-size: 13px;">
+                <summary style="cursor: pointer; color: var(--accent); padding: 6px 0 12px;">Pedir para adicionar meu nome</summary>
+                <form id="teacher-request-form">
+                    <div class="form-group">
+                        <label for="teacher-request-name">Qual seu nome?</label>
+                        <input id="teacher-request-name" type="text" minlength="3" maxlength="100" autocomplete="name" required>
+                    </div>
+                    <button type="submit" class="btn btn-save">Requisitar pelo WhatsApp</button>
+                    <p style="margin-top: 10px;">O WhatsApp abrirá com a mensagem pronta. Toque em enviar para concluir o pedido.</p>
+                    <p id="teacher-request-status" role="status" aria-live="polite"></p>
+                </form>
+            </details>
             <details id="teacher-add-details">
-                <summary>Não tem seu nome? Adicione com senha</summary>
+                <summary>Adicionar nome com senha (responsável)</summary>
                 <form id="teacher-add-form">
                     <div class="form-group">
                         <label for="new-teacher-name">Nome da professora ou professor</label>
@@ -172,6 +184,6 @@
     </div>
 </div>
 
-<script type="module" src="script.js?v=turnos-5"></script>
+<script type="module" src="script.js?v=pedido-whatsapp-6"></script>
 </body>
 </html>
