@@ -244,8 +244,18 @@ document.getElementById("teacher-add-form").addEventListener("submit", async eve
 
 let bookingInProgress = false;
 
+const BOOKING_WINDOW_MESSAGE = "Limite de antecedência: os agendamentos são permitidos somente para a semana atual e a próxima. Selecione uma dessas semanas.";
+
+function isWeekOpenForBooking(weekId) {
+    return [getWeekId(getWeekDates(0)), getWeekId(getWeekDates(1))].includes(weekId);
+}
+
 window.saveBooking = function() {
     if (bookingInProgress) return;
+    if (!isWeekOpenForBooking(formWeek)) {
+        bookingStatus.textContent = BOOKING_WINDOW_MESSAGE;
+        return;
+    }
     const prof = teacherDirectory().find(teacher => teacher.key === selectedTeacher?.key)?.name || "";
     const series = document.getElementById("series-input").value.trim();
 
@@ -313,6 +323,11 @@ if (cancelForm) cancelForm.addEventListener("submit", async (event) => {
 });
 
 window.openSlot = function(day, hourId, range, fullDayLabel) {
+    const existingBooking = (bookings[currentWeekKey] || {})[`${day}-${hourId}`];
+    if (!existingBooking && !isWeekOpenForBooking(currentWeekKey)) {
+        alert(BOOKING_WINDOW_MESSAGE);
+        return;
+    }
     currentSlotKey = `${day}-${hourId}`;
     formWeek = currentWeekKey;
     selectedTeacher = null;
