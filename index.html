@@ -25,7 +25,7 @@
     });
 })();
     </script>
-    <link rel="stylesheet" href="style.css?v=cadastro-senha-4">
+    <link rel="stylesheet" href="style.css?v=turnos-5">
 </head>
 <body>
 
@@ -51,6 +51,17 @@
             <button class="btn-nav" onclick="changeWeek(1)">Avançar ▶</button>
         </div>
     </header>
+
+    <section class="shift-toolbar" aria-label="Turno das aulas">
+        <div class="shift-selector" role="group" aria-label="Selecionar turno">
+            <button type="button" data-shift="morning" aria-pressed="false" onclick="changeShift('morning')">Manhã</button>
+            <button type="button" data-shift="afternoon" aria-pressed="false" onclick="changeShift('afternoon')">Tarde</button>
+        </div>
+        <div class="shift-info">
+            <strong id="shift-description">Horários do laboratório</strong>
+            <span>Até 3 reservas semanais por docente, somando manhã e tarde.</span>
+        </div>
+    </section>
 
     <div class="legend-grid">
         <div class="legend-item">
@@ -103,7 +114,7 @@
         <div id="form-container">
             <p id="weekly-limit-notice" style="padding: 12px; border: 1px solid var(--border-fixed); border-radius: 10px; background: var(--bg-fixed); color: var(--text-fixed); line-height: 1.5;">
                 <strong>Limite: 3 aulas por semana por professora.</strong><br>
-                Selecione seu cadastro. O limite é por professora, independentemente da turma.
+                Selecione seu cadastro. O limite soma as reservas da manhã e da tarde, independentemente da turma.
             </p>
             <div class="form-group">
                 <label for="prof-name-input">Selecione a professora *</label>
@@ -161,6 +172,6 @@
     </div>
 </div>
 
-<script type="module" src="script.js?v=cadastro-senha-4"></script>
+<script type="module" src="script.js?v=turnos-5"></script>
 </body>
 </html>
