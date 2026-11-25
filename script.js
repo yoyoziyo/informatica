@@ -19,13 +19,24 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
 // Configuração Estática dos Horários da EMEF Vilma
-const hours = [
+const afternoonHours = [
     { id: "h1", range: "12:30 - 13:20", label: "1ª Aula" },
     { id: "h2", range: "13:20 - 14:10", label: "2ª Aula" },
     { id: "interval", range: "14:10 - 14:30", label: "INTERVALO" },
     { id: "h3", range: "14:30 - 15:20", label: "3ª Aula" },
     { id: "h4", range: "15:20 - 16:10", label: "4ª Aula" }
 ];
+
+const morningHours = [
+    { id: "m1", range: "07:00 - 07:50", label: "1ª Aula" },
+    { id: "m2", range: "07:50 - 08:40", label: "2ª Aula" },
+    { id: "m3", range: "08:40 - 09:30", label: "3ª Aula" },
+    { id: "interval", range: "09:30 - 09:50", label: "INTERVALO" },
+    { id: "m4", range: "09:50 - 10:40", label: "4ª Aula" },
+    { id: "m5", range: "10:40 - 11:30", label: "5ª Aula" }
+];
+const shiftHours = { morning: morningHours, afternoon: afternoonHours };
+let currentShift = new Date().getHours() < 12 ? "morning" : "afternoon";
 
 const days = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta"];
 
@@ -111,6 +122,14 @@ function scrollToCurrentDay() {
         }, 300);
     }
 }
+
+window.changeShift = function(shift) {
+    if (!Object.prototype.hasOwnProperty.call(shiftHours, shift)) return;
+    window.closeModal();
+    currentShift = shift;
+    renderView();
+    scrollToCurrentDay();
+};
 
 window.changeWeek = function(direction) {
     currentWeekOffset += direction;
@@ -336,7 +355,7 @@ window.openSlot = function(day, hourId, range, fullDayLabel) {
     document.getElementById("teacher-add-status").textContent = "";
     teacherResults.replaceChildren();
     bookingStatus.textContent = "";
-    document.getElementById("modal-datetime").innerText = `${fullDayLabel} — ${range}`;
+    document.getElementById("modal-datetime").innerText = `${fullDayLabel} — ${hourId.startsWith("m") ? "Manhã" : "Tarde"} · ${range}`;
     
     const weekBookings = bookings[currentWeekKey] || {};
 
@@ -366,6 +385,11 @@ window.openSlot = function(day, hourId, range, fullDayLabel) {
 };
 
 function renderView() {
+    const hours = shiftHours[currentShift];
+    document.querySelectorAll('[data-shift]').forEach(button => {
+        button.setAttribute('aria-pressed', String(button.dataset.shift === currentShift));
+    });
+    document.getElementById('shift-description').textContent = currentShift === 'morning' ? 'Manhã · 07:00–11:30' : 'Tarde · 12:30–16:10';
     const dates = getWeekDates(currentWeekOffset);
     currentWeekKey = getWeekId(dates);
 
