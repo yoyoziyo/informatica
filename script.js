@@ -46,7 +46,6 @@ const fixedClasses = {
     "Terça-h4": "4ºB - Gilmara",
     "Quarta-h3": "3ºE - Michele",
     "Quarta-h4": "4ºA - Michele",
-    "Quinta-h1": "5ºC - Heloísa",
     "Quinta-h2": "3ºB - Isabel",
     "Quinta-h3": "3ºA / 4ºD",
     "Quinta-h4": "5ºA - Márcia",
