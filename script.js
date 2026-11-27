@@ -153,10 +153,15 @@ function normalizeTeacherName(name) {
         .replace(/\s+/g, " ");
 }
 
-function hasReachedWeeklyLimit(weekBookings, normalizedName) {
-    return Object.values(weekBookings).filter(
-        booking => normalizeTeacherName(booking?.prof) === normalizedName
-    ).length >= WEEKLY_BOOKING_LIMIT;
+function countTeacherBookings(weekBookings, normalizedName, shift) {
+    return Object.entries(weekBookings).filter(([slot, booking]) =>
+        (shift === "morning" ? /-m[1-5]$/.test(slot) : /-h[1-4]$/.test(slot)) &&
+        normalizeTeacherName(booking?.prof) === normalizedName
+    ).length;
+}
+
+function hasReachedWeeklyLimit(weekBookings, normalizedName, shift) {
+    return countTeacherBookings(weekBookings, normalizedName, shift) >= WEEKLY_BOOKING_LIMIT;
 }
 
 
@@ -178,7 +183,7 @@ function teacherDirectory() {
 }
 
 function weeklyTeacherCount(key) {
-    return Object.values(bookings[formWeek] || {}).filter(b => normalizeTeacherName(b?.prof) === key).length;
+    return countTeacherBookings(bookings[formWeek] || {}, key, currentShift);
 }
 
 function chooseTeacher(teacher) {
@@ -187,8 +192,8 @@ function chooseTeacher(teacher) {
     teacherResults.replaceChildren();
     const count = weeklyTeacherCount(teacher.key);
     bookingStatus.textContent = count >= 3
-        ? "Limite semanal atingido: esta professora já reservou 3 aulas nesta semana."
-        : teacher.name + ": " + count + " de 3 aulas reservadas nesta semana.";
+        ? "Limite semanal atingido: este docente já reservou 3 aulas neste período. O limite é separado entre manhã e tarde."
+        : teacher.name + ": " + count + " de 3 aulas reservadas neste período da semana.";
 }
 
 function showTeacherOptions() {
@@ -314,8 +319,8 @@ window.saveBooking = function() {
         return;
     }
 
-    if (hasReachedWeeklyLimit(weekBookings, normalizedName)) {
-        bookingStatus.textContent = "Limite semanal atingido: esta professora já reservou 3 aulas nesta semana.";
+    if (hasReachedWeeklyLimit(weekBookings, normalizedName, currentSlotKey.split("-").pop().startsWith("m") ? "morning" : "afternoon")) {
+        bookingStatus.textContent = "Limite semanal atingido: este docente já reservou 3 aulas neste período. O limite é separado entre manhã e tarde.";
         return;
     }
 
